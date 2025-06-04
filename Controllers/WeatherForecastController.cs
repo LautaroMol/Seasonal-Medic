@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace APISeasonalTicket.Controllers;
+namespace APISeasonalMedic.Controllers;
 
 [ApiController]
 [Route("[controller]")]

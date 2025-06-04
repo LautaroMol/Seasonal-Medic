@@ -1,8 +1,6 @@
-﻿using APISeasonalTicket.Data;
-using APISeasonalTicket.DTOs;
-using APISeasonalTicket.Migrations;
-using APISeasonalTicket.Models;
-using Azure.Core;
+using APISeasonalMedic.Data;
+using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Models;
 using MercadoPago.Config;
 using Microsoft.EntityFrameworkCore;
 using System.Net.Http.Headers;
@@ -23,7 +21,7 @@ public class MonthlyDebitService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("🚀 MonthlyDebitService iniciado.");
+        _logger.LogInformation("?? MonthlyDebitService iniciado.");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -33,11 +31,11 @@ public class MonthlyDebitService : BackgroundService
             }
             catch (TaskCanceledException)
             {
-                _logger.LogWarning("🚨 ProcesarDebitos fue cancelado.");
+                _logger.LogWarning("?? ProcesarDebitos fue cancelado.");
             }
             catch (Exception ex)
             {
-                _logger.LogError($"❌ Error en MonthlyDebitService: {ex.Message}");
+                _logger.LogError($"? Error en MonthlyDebitService: {ex.Message}");
             }
 
             await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
@@ -71,13 +69,13 @@ public class MonthlyDebitService : BackgroundService
                 var subscriptionData = await response.Content.ReadFromJsonAsync<SubscriptionResponse>(cancellationToken: stoppingToken);
                 if (subscriptionData != null && subscriptionData.status == "authorized")
                 {
-                    _logger.LogInformation($"✅ Pago automático realizado para usuario {suscripcion.UserId}");
+                    _logger.LogInformation($"? Pago autom�tico realizado para usuario {suscripcion.UserId}");
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError($"❌ Error en ProcesarDebitos: {ex.Message}");
+            _logger.LogError($"? Error en ProcesarDebitos: {ex.Message}");
         }
     }
 

@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
-namespace APISeasonalTicket.DTOs
+namespace APISeasonalMedic.DTOs
 {
     public class CreditCardDto
     {
@@ -9,7 +9,7 @@ namespace APISeasonalTicket.DTOs
         public int ExpirationYear { get; set; }
         public int ExpirationMonth { get; set; }
         public string Token { get; set; }
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
         public string CustomerId { get; set; }
         public string CardId { get; set; }
 

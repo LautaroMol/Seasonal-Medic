@@ -1,8 +1,7 @@
-﻿namespace APISeasonalTicket.DTOs
+namespace APISeasonalMedic.DTOs
 {
     public class SetMainCardRequest
     {
-        public int UserId { get; set; }
-        public int CardId { get; set; }
+        public Guid CardId { get; set; }
     }
 }

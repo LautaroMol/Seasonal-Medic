@@ -1,9 +1,10 @@
-﻿using APISeasonalTicket.Data;
-using APISeasonalTicket.Models;
+using APISeasonalMedic.Data;
+using APISeasonalMedic.Models;
+using APISeasonalMedic.Services.Interface;
 
-namespace APISeasonalTicket.Services
+namespace APISeasonalMedic.Services
 {
-    public class SubscriptionService : ISubscriptionService
+    public class SubscriptionService
     {
         private readonly ApplicationDbContext _context;
 
@@ -12,7 +13,7 @@ namespace APISeasonalTicket.Services
             _context = context;
         }
 
-        public async Task<bool> SaveUserSubscriptionAsync(int userId, string subscriptionId)
+        public async Task<bool> SaveUserSubscriptionAsync(Guid userId, string subscriptionId)
         {
             var subscription = new UserSubscription
             {

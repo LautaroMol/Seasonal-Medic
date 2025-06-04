@@ -1,6 +1,6 @@
-﻿using APISeasonalTicket.Models;
+using APISeasonalMedic.Models;
 
-namespace APISeasonalTicket.Services
+namespace APISeasonalMedic.Services.Interface
 {
     public interface IMessageService
     {

@@ -1,19 +1,19 @@
-using APISeasonalTicket.Data;
-using APISeasonalTicket.DTOs;
-using APISeasonalTicket.Models;
-using APISeasonalTicket.Services;
+using APISeasonalMedic.Data;
+using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Models;
+using APISeasonalMedic.Services;
+using APISeasonalMedic.Services.Interface;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -32,56 +32,53 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddHostedService<MonthlyDebitService>();
 builder.Services.AddHttpClient<MercadoPagoService>();
 builder.Services.AddScoped<MercadoPagoService>();
-
-//redireccion
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.Events.OnRedirectToLogin = context =>
-    {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        return Task.CompletedTask;
-    };
-});
-
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IMessageService, MessageService>();
 
 //gmail
 builder.Services.Configure<GmailSettings>(builder.Configuration.GetSection("GmailSettings"));
-//login
+
+// Identity options - CORREGIDO: Email confirmation deshabilitado para desarrollo
+builder.Services.AddIdentity<User, IdentityRole<Guid>>(options =>
+{
+    // IMPORTANTE: Deshabilitar confirmación de email para desarrollo
+    options.SignIn.RequireConfirmedEmail = false; // Cambiado de true a false
+    options.User.RequireUniqueEmail = true;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequiredLength = 6;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
+
+// JWT Authentication - DEBE IR DESPUÉS DE Identity
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
-    var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
+    var key = Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]);
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(key)
-    };
-
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
-        {
-            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-            if (!string.IsNullOrEmpty(token))
-            {
-                context.Token = token;
-            }
-            return Task.CompletedTask;
-        }
+        ValidIssuer = builder.Configuration["JWT:Issuer"],
+        ValidAudience = builder.Configuration["JWT:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ClockSkew = TimeSpan.Zero // Opcional: reduce la tolerancia de tiempo
     };
 });
 
 //views
 builder.Services.AddControllersWithViews();
+
 // Add CORS services
 builder.Services.AddCors(options =>
 {
@@ -91,19 +88,6 @@ builder.Services.AddCors(options =>
                         .AllowAnyHeader());
 });
 
-//identity options
-// Identity options
-builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
-{
-    options.SignIn.RequireConfirmedEmail = true;
-    options.User.RequireUniqueEmail = true;
-    options.Password.RequireNonAlphanumeric = false;
-})
-.AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders();
-
-//MesageService
-builder.Services.AddScoped<IMessageService, MessageService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -112,19 +96,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseStaticFiles();
-app.UseCors("AllowAll");
-app.UseAuthentication();
 
+// IMPORTANTE: Orden correcto del middleware
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseRouting();
-// Usar CORS
 
+// Authentication y Authorization DESPUÉS de UseRouting
+app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
 
+app.MapControllers();
 
 app.MapControllerRoute(
     name: "mercadoPago",
@@ -157,7 +143,7 @@ app.MapGet("/api/card/{id}", async(ICreditCardService creditCardService, int id)
     }
     return Results.NotFound();
 });
-app.MapGet("/api/card/user/{userId}", async (ICreditCardService creditCardService, int userId) =>
+app.MapGet("/api/card/user/{userId}", async (ICreditCardService creditCardService, Guid userId) =>
 {
     var cards = await creditCardService.GetCreditCardsByUserIdAsync(userId);
     if (cards.Any())
@@ -168,15 +154,25 @@ app.MapGet("/api/card/user/{userId}", async (ICreditCardService creditCardServic
 });
 app.MapPut("/api/cards/set-main", async (
     SetMainCardRequest request,
-    ICreditCardService cardService) =>
+    ICreditCardService cardService,
+    HttpContext httpContext) =>
 {
-    var success = await cardService.SetMainCardAsync(request.UserId, request.CardId);
+    var userIdClaim = httpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+    if (userIdClaim == null)
+        return Results.Unauthorized();
+
+    if (!Guid.TryParse(userIdClaim.Value, out var userId))
+        return Results.BadRequest("ID de usuario inválido");
+
+    var success = await cardService.SetMainCardAsync(userId, request.CardId);
 
     if (!success)
         return Results.BadRequest("No se pudo actualizar la tarjeta principal.");
 
     return Results.Ok("Tarjeta principal actualizada correctamente.");
 });
+//.RequireAuthorization(); 
+
 
 app.MapPost("/api/card", async (ICreditCardService creditCardService, CreditCardDto creditCard) =>
 {
@@ -227,7 +223,7 @@ app.MapPost("/api/movimiento", async (IMovimientosAbonoService movimientosAbonoS
     return Results.Ok(mov);
 });
 
-app.MapGet("/api/movimiento/abono/{abonoId}", async (IMovimientosAbonoService movimientosAbonoService, int abonoId) =>
+app.MapGet("/api/movimiento/abono/{abonoId}", async (IMovimientosAbonoService movimientosAbonoService, Guid abonoId) =>
 {
     var mov = await movimientosAbonoService.GetByAbonoId(abonoId);
     return Results.Ok(mov);
@@ -261,14 +257,14 @@ public static class IdentityDataInitializer
 {
     public static async Task SeedRolesAsync(IServiceProvider serviceProvider)
     {
-        var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole<int>>>();
+        var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
 
         string[] roles = { "Admin", "Supervisor", "User" };
 
         foreach (var role in roles)
         {
             if (!await roleManager.RoleExistsAsync(role))
-                await roleManager.CreateAsync(new IdentityRole<int>(role));
+                await roleManager.CreateAsync(new IdentityRole<Guid>(role));
         }
     }
 }

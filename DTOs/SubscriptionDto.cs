@@ -1,4 +1,4 @@
-﻿namespace APISeasonalTicket.DTOs
+namespace APISeasonalMedic.DTOs
 {
     public class SubscriptionDto
     {

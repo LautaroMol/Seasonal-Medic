@@ -1,7 +1,7 @@
-﻿using APISeasonalTicket.Models;
+using APISeasonalMedic.Models;
 using AutoMapper;
 
-namespace APISeasonalTicket.DTOs
+namespace APISeasonalMedic.DTOs
 {
     public class MappingProfile : Profile
     {
@@ -12,6 +12,7 @@ namespace APISeasonalTicket.DTOs
             CreateMap<Abono, AbonoDto>().ReverseMap();
             CreateMap<MovimientosAbono, MovAbonosDto>().ReverseMap();
             CreateMap<User, UserDto>();
+            CreateMap<RegisterDto, User>();
         }
     }
 }

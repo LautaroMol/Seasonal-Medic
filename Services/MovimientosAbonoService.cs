@@ -1,10 +1,11 @@
-﻿using APISeasonalTicket.Data;
-using APISeasonalTicket.DTOs;
-using APISeasonalTicket.Models;
+using APISeasonalMedic.Data;
+using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Models;
+using APISeasonalMedic.Services.Interface;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
-namespace APISeasonalTicket.Services
+namespace APISeasonalMedic.Services
 {
     public class MovimientosAbonoService : IMovimientosAbonoService
     {
@@ -28,7 +29,7 @@ namespace APISeasonalTicket.Services
             var movimientosAbonos = await _context.MovimientosAbonos.ToListAsync();
             return movimientosAbonos;
         }
-        public async Task<List<MovAbonosDto>> GetByAbonoId(int abonoId)
+        public async Task<List<MovAbonosDto>> GetByAbonoId(Guid abonoId)
         {
             var movimientos = await _context.MovimientosAbonos
                 .Where(m => m.AbonoId == abonoId)
@@ -57,7 +58,7 @@ namespace APISeasonalTicket.Services
             else if (movimientosAbonosDto.Tipo.ToLower() == "debito")
                 abono.Total -= movimientosAbonosDto.Monto;
             else
-                throw new Exception("Tipo de movimiento inválido");
+                throw new Exception("Tipo de movimiento inv�lido");
 
             // Guardar movimiento
             await _context.MovimientosAbonos.AddAsync(movimientosAbono);

@@ -1,5 +1,5 @@
-﻿using APISeasonalTicket.Data;
-using APISeasonalTicket.Models;
+using APISeasonalMedic.Data;
+using APISeasonalMedic.Models;
 using Azure.Core;
 using MercadoPago.Client.Customer;
 using MercadoPago.Config;
@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 using RestSharp;
 using System.Net.Http.Headers;
 
-namespace APISeasonalTicket.Services
+namespace APISeasonalMedic.Services
 {
     public class MercadoPagoService
     {
@@ -104,7 +104,7 @@ namespace APISeasonalTicket.Services
             {
                 payer_email = user.Email,
                 back_url = "https://tusitio.com/suscripcion",
-                reason = "Suscripción mensual",
+                reason = "Suscripci�n mensual",
                 auto_recurring = new
                 {
                     frequency = 1,
@@ -141,7 +141,7 @@ namespace APISeasonalTicket.Services
             return token ?? string.Empty;
         }
 
-        public async Task<bool> SaveUserSubscriptionAsync(int userId, string subscriptionId)
+        public async Task<bool> SaveUserSubscriptionAsync(Guid userId, string subscriptionId)
         {
             var subscription = new UserSubscription
             {

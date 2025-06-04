@@ -1,18 +1,21 @@
-﻿using APISeasonalTicket.Models;
+using APISeasonalMedic.Models;
 using System.ComponentModel.DataAnnotations;
 
-namespace APISeasonalTicket.DTOs
+namespace APISeasonalMedic.DTOs
 {
     public class UserDto
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string DNI { get; set; }
+
         [Required(ErrorMessage = "Se requiere el nombre")]
         [MaxLength(255)]
         public string FirstName { get; set; }
-        [Required(ErrorMessage = "Se requiere el nombre Apellido")]
+
+        [Required(ErrorMessage = "Se requiere el apellido")]
         [MaxLength(255)]
         public string LastName { get; set; }
+
         public string Email { get; set; }
         public string AreaCode { get; set; }
         public string PhoneNumber { get; set; }

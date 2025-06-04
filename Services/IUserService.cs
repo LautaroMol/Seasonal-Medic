@@ -1,18 +1,21 @@
-﻿using APISeasonalTicket.DTOs;
-using APISeasonalTicket.Models;
+﻿using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Models;
 
-namespace APISeasonalTicket.Services
+namespace APISeasonalMedic.Services
 {
     public interface IUserService
     {
-        Task<UserDto> CreateUserAsync(UserDto userDto);
-        Task<UserDto> DeleteUserAsync(int id);
-        Task<List<User>> GetAll();
-        Task<User> GetUserByDNIAsync(string dni);
+        Task<bool> DeleteUserAsync(Guid userId);
+        Task<UserDto> GetCurrentUserDtoAsync();
+        Task<User> GetCurrentUserEntityAsync();
+        Task<bool> GetMailAvailabilityAsync(string email);
         Task<User> GetUserByEmailAsync(string email);
-        Task<User> GetUserByIdAsync(int id);
-        Task<UserDto> UpdateUserAsync(UserDto userDto);
-        Task<User> UpdateUserAsyncDirect(User user);
-        Task<bool> GetMailAvalibility(string email);
+        Task<UserDto> GetUserDtoByIdAsync(Guid id);
+        Task<User> GetUserEntityByIdAsync(Guid id);
+        Task<LoginResponseDto> LoginAsync(LoginDTO dto);
+        Task<UserDto> RegisterAsync(RegisterDto dto);
+        Task<bool> UpdateUserAsyncDirect(User user);
+        Task<UserDto> UpdateUserDtoAsync(UserDto dto);
+        Task<User> UpdateUserEntityAsync(User user);
     }
 }

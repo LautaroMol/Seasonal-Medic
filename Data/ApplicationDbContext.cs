@@ -1,12 +1,12 @@
-ï»¿using APISeasonalTicket.Models;
+using APISeasonalMedic.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection.Emit;
 
-namespace APISeasonalTicket.Data
+namespace APISeasonalMedic.Data
 {
-    public class ApplicationDbContext : IdentityDbContext<User,IdentityRole<int>, int>
+    public class ApplicationDbContext : IdentityDbContext<User,IdentityRole<Guid>, Guid>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
@@ -26,19 +26,37 @@ namespace APISeasonalTicket.Data
                 .IsUnique();
 
             modelBuilder.Entity<User>()
-            .HasOne(u => u.Abono)
-            .WithOne(a => a.User)
-            .HasForeignKey<Abono>(a => a.UserId);
+                .HasOne(u => u.Abono)
+                .WithOne(a => a.User)
+                .HasForeignKey<Abono>(a => a.UserId);
 
             modelBuilder.Entity<User>()
-            .HasMany(u => u.Cards)
-            .WithOne(c => c.User)
-            .HasForeignKey(c => c.UserId);
+                .HasMany(u => u.Cards)
+                .WithOne(c => c.User)
+                .HasForeignKey(c => c.UserId);
 
             modelBuilder.Entity<Abono>()
-            .HasMany(a => a.Movimientos)
-            .WithOne(m => m.Abono)
-            .HasForeignKey(m => m.AbonoId);
+                .HasMany(a => a.Movimientos)
+                .WithOne(m => m.Abono)
+                .HasForeignKey(m => m.AbonoId);
+
+            // Aquí definís la precisión para propiedades decimal
+            modelBuilder.Entity<Abono>(entity =>
+            {
+                entity.Property(e => e.MontoMensual).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Total).HasColumnType("decimal(18,2)");
+            });
+
+            modelBuilder.Entity<MovimientosAbono>(entity =>
+            {
+                entity.Property(e => e.Monto).HasColumnType("decimal(18,2)");
+            });
+
+            modelBuilder.Entity<UserSubscription>(entity =>
+            {
+                entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+            });
         }
+
     }
 }

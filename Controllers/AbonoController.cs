@@ -1,8 +1,8 @@
-﻿using APISeasonalTicket.DTOs;
-using APISeasonalTicket.Services;
+using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Services.Interface;
 using Microsoft.AspNetCore.Mvc;
 
-namespace APISeasonalTicket.Controllers
+namespace APISeasonalMedic.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -32,7 +32,7 @@ namespace APISeasonalTicket.Controllers
             return Ok(abono);
         }
         [HttpGet("/user/{userId}")]
-        public async Task<IActionResult> GetAbonoByUserId(int userId)
+        public async Task<IActionResult> GetAbonoByUserId(Guid userId)
         {
             var abono = await _abonoService.GetAbonoByUserId(userId);
             if (abono == null)

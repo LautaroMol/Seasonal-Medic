@@ -1,6 +1,6 @@
-@APISeasonalTicket_HostAddress = http://localhost:5017
+@APISeasonalMEdic_HostAddress = http://localhost:5017
 
-GET {{APISeasonalTicket_HostAddress}}/weatherforecast/
+GET {{APISeasonalMEdic_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###

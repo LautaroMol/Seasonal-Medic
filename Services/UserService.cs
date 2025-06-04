@@ -1,103 +1,135 @@
-﻿using APISeasonalTicket.Data;
-using APISeasonalTicket.DTOs;
-using APISeasonalTicket.Models;
+﻿using APISeasonalMedic.Data;
+using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Models;
+using APISeasonalMedic.Services.Interface;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using System.Security.Claims;
 
-namespace APISeasonalTicket.Services
+namespace APISeasonalMedic.Services
 {
     public class UserService : IUserService
     {
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
         private readonly UserManager<User> _userManager;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IJwtService _jwtService;
 
-        public UserService(ApplicationDbContext context, IMapper mapper, UserManager<User> userManager)
+        public UserService(
+            ApplicationDbContext context,
+            IMapper mapper,
+            UserManager<User> userManager,
+            IHttpContextAccessor httpContextAccessor,
+            IJwtService jwtService)
         {
             _context = context;
             _mapper = mapper;
             _userManager = userManager;
+            _httpContextAccessor = httpContextAccessor;
+            _jwtService = jwtService;
         }
 
-        // No mapeo a DTO en GetAll
-        public async Task<List<User>> GetAll()
+        private Guid GetUserIdFromToken()
         {
-            var users = await _context.Users.ToListAsync();
-            return users;
+            var userId = _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            return Guid.Parse(userId ?? throw new UnauthorizedAccessException("No se pudo obtener el ID del usuario."));
         }
 
-        public async Task<User> GetUserByIdAsync(int id)
+        public async Task<UserDto> RegisterAsync(RegisterDto dto)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
-                return null;
+            var user = _mapper.Map<User>(dto);
+            user.UserName = dto.Email;
+            user.Email = dto.Email;
 
-            // Obtener los roles del usuario usando UserManager
-            var roles = await _userManager.GetRolesAsync(user);
+            var result = await _userManager.CreateAsync(user, dto.Password);
+            if (!result.Succeeded)
+                throw new InvalidOperationException("Error al registrar el usuario.");
 
-            user.Roles = roles.ToList();
-
-            return user;
-        }
-        public async Task<User> GetUserByEmailAsync(string email)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-            return user;
-        }
-
-        public async Task<User> GetUserByDNIAsync(string dni)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.DNI == dni);
-            return user;
-        }
-        public async Task<bool> GetMailAvalibility(string email)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-            if (user == null)
-                return true;
-            return false;
-        }
-
-        // Mapeo a UserDto en CreateUserAsync para devolverlo al cliente
-        public async Task<UserDto> CreateUserAsync(UserDto userDto)
-        {
-            var user = _mapper.Map<User>(userDto);
-            user.NormalizedEmail = user.Email.ToUpper();
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
             return _mapper.Map<UserDto>(user);
         }
 
-        // Mapeo a UserDto en UpdateUserAsync
-        public async Task<UserDto> UpdateUserAsync(UserDto userDto)
+        public async Task<LoginResponseDto> LoginAsync(LoginDTO dto)
         {
-            var existingUser = await _context.Users.FindAsync(userDto.Id);
+            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
+                throw new UnauthorizedAccessException("Credenciales inválidas");
+            var roles = await _userManager.GetRolesAsync(user);
 
-            if (existingUser == null)
-            {
-                throw new KeyNotFoundException($"No se encontró un usuario con ID {userDto.Id}");
-            }
+            var result = _jwtService.GenerateToken(user.Id, user.Email, roles.ToList());
+            return new LoginResponseDto { Token = result.Token, ExpiresAt = result.ExpiresAt };
 
-            _mapper.Map(userDto, existingUser);
+        }
+
+        public async Task<UserDto> GetCurrentUserDtoAsync()
+        {
+            var user = await GetCurrentUserEntityAsync();
+            return _mapper.Map<UserDto>(user);
+        }
+
+        public async Task<User> GetCurrentUserEntityAsync()
+        {
+            var userId = GetUserIdFromToken();
+            var user = await _context.Users.FindAsync(userId);
+            return user ?? throw new KeyNotFoundException("Usuario no encontrado");
+        }
+        public async Task<User> GetUserEntityByIdAsync(Guid id)
+        {
+            return await _userManager.Users.FirstOrDefaultAsync(u => u.Id == id);
+        }
+        public async Task<UserDto> GetUserDtoByIdAsync(Guid userId)
+        {
+            var user = await _context.Users.FindAsync(userId)
+                       ?? throw new KeyNotFoundException("Usuario no encontrado");
+            return _mapper.Map<UserDto>(user);
+        }
+        public async Task<User> GetUserByEmailAsync(string email)
+        {
+            return await _userManager.Users.FirstOrDefaultAsync(u => u.Email == email);
+        }
+        public async Task<bool> UpdateUserAsyncDirect(User user)
+        {
+            var result = await _userManager.UpdateAsync(user);
+            return result.Succeeded;
+        }
+        public async Task<bool> GetMailAvailabilityAsync(string email)
+        {
+            return !await _context.Users.AnyAsync(u => u.Email == email);
+        }
+
+        public async Task<UserDto> UpdateUserDtoAsync(UserDto dto)
+        {
+            var userId = GetUserIdFromToken();
+            var existingUser = await _context.Users.FindAsync(userId);
+            if (existingUser == null) throw new KeyNotFoundException("Usuario no encontrado");
+
+            _mapper.Map(dto, existingUser);
             await _context.SaveChangesAsync();
-
             return _mapper.Map<UserDto>(existingUser);
         }
-        public async Task<User> UpdateUserAsyncDirect(User user)
+
+        public async Task<User> UpdateUserEntityAsync(User user)
         {
+            var currentUserId = GetUserIdFromToken();
+            if (user.Id != currentUserId)
+                throw new UnauthorizedAccessException("No se puede modificar otro usuario");
+
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
             return user;
         }
-
-        // Mapeo a UserDto en DeleteUserAsync para devolverlo al cliente
-        public async Task<UserDto> DeleteUserAsync(int id)
+        public async Task<bool> DeleteUserAsync(Guid userId)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+                return false;
+
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
-            return _mapper.Map<UserDto>(user);
+            return true;
         }
     }
 }

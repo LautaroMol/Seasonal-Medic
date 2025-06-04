@@ -1,13 +1,13 @@
-﻿using APISeasonalTicket.DTOs;
-using APISeasonalTicket.Models;
+﻿using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Models;
 
-namespace APISeasonalTicket.Services
+namespace APISeasonalMedic.Services.Interface
 {
     public interface IAbonoService
     {
         Task<AbonoDto> Delete(int id);
         Task<Abono> GetAbonoByIdAsync(int id);
-        Task<Abono> GetAbonoByUserId(int userId);
+        Task<Abono> GetAbonoByUserId(Guid userId);
         Task<List<Abono>> GetAll();
         Task<AbonoDto> Post(AbonoDto abonodto);
         Task<AbonoDto> Update(AbonoDto abonodto, int id);

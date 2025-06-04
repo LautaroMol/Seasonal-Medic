@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
-namespace APISeasonalTicket.DTOs
+namespace APISeasonalMedic.DTOs
 {
     public class AbonoDto
     {

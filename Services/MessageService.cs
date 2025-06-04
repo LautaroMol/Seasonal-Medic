@@ -1,8 +1,9 @@
-﻿using APISeasonalTicket.Models;
+using APISeasonalMedic.Models;
+using APISeasonalMedic.Services.Interface;
 using Microsoft.Extensions.Options;
 using System.Net.Mail;
 
-namespace APISeasonalTicket.Services
+namespace APISeasonalMedic.Services
 {
     public class MessageService : IMessageService
     {
@@ -18,7 +19,7 @@ namespace APISeasonalTicket.Services
     try
     {
         if (string.IsNullOrWhiteSpace(to))
-            throw new ArgumentException("El destinatario no puede estar vacío.");
+            throw new ArgumentException("El destinatario no puede estar vac�o.");
 
         var fromEmail = _gmailSettings.Username;
         var password = _gmailSettings.Password;

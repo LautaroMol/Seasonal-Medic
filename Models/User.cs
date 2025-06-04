@@ -1,9 +1,9 @@
-ï»¿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 
-namespace APISeasonalTicket.Models
+namespace APISeasonalMedic.Models
 {
-    public class User : IdentityUser<int>
+    public class User : IdentityUser<Guid>
     {
         [Required(ErrorMessage = "Se requiere el nombre")]
         [MaxLength(255)]
@@ -14,7 +14,7 @@ namespace APISeasonalTicket.Models
         [Required(ErrorMessage = "Se requiere el DNI")]
         [MaxLength(9)]
         public string DNI { get; set; }
-        [Required(ErrorMessage = "Se requiere el nÃºmero de telÃ©fono")]
+        [Required(ErrorMessage = "Se requiere el número de teléfono")]
         [MaxLength(15)]
         public string PhoneNumber { get; set; }
         public string? AreaCode { get; set; }
@@ -22,7 +22,9 @@ namespace APISeasonalTicket.Models
         public string? CustomerId { get; set; }
         public string? CardToken { get; set; }
         public string? ProfileImageUrl { get; set; }
-
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
         public virtual ICollection<CreditCard> Cards { get; set; }
         public virtual Abono Abono { get; set; }
         public List<string> Roles { get; set; } = new List<string>();

@@ -1,10 +1,11 @@
-﻿using APISeasonalTicket.Data;
-using APISeasonalTicket.DTOs;
-using APISeasonalTicket.Models;
+using APISeasonalMedic.Data;
+using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Models;
+using APISeasonalMedic.Services.Interface;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
-namespace APISeasonalTicket.Services
+namespace APISeasonalMedic.Services
 {
     public class AbonoService : IAbonoService
     {
@@ -27,7 +28,7 @@ namespace APISeasonalTicket.Services
             var abonos = await _context.Abonos.ToListAsync();
             return abonos;
         }
-        public async Task<Abono> GetAbonoByUserId(int userId)
+        public async Task<Abono> GetAbonoByUserId(Guid userId)
         {
             var abono = await _context.Abonos
                 .Where(c => c.UserId == userId)

@@ -1,10 +1,11 @@
-ï»¿using APISeasonalTicket.Data;
-using APISeasonalTicket.DTOs;
-using APISeasonalTicket.Models;
+using APISeasonalMedic.Data;
+using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Models;
+using APISeasonalMedic.Services.Interface;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
-namespace APISeasonalTicket.Services
+namespace APISeasonalMedic.Services
 {
     public class CreditCardService : ICreditCardService
     {
@@ -16,7 +17,6 @@ namespace APISeasonalTicket.Services
         {
             _context = context;
             _mapper = mapper;
-
         }
 
         public async Task<List<CreditCard>> GetAll()
@@ -33,13 +33,13 @@ namespace APISeasonalTicket.Services
             }
             return creditCard;
         }
-        public async Task<List<CreditCard>> GetCreditCardsByUserIdAsync(int userId)
+        public async Task<List<CreditCard>> GetCreditCardsByUserIdAsync(Guid userId)
         {
             return await _context.CreditCards
                 .Where(c => c.UserId == userId)
                 .ToListAsync();
         }
-        public async Task<CreditCard> GetActiveCreditCardByUserIdAsync(int userId)
+        public async Task<CreditCard> GetActiveCreditCardByUserIdAsync(Guid userId)
         {
             return await _context.CreditCards
                 .Where(c => c.UserId == userId && c.IsPrimary) // Filtrar por tarjeta activa
@@ -53,7 +53,7 @@ namespace APISeasonalTicket.Services
             await _context.SaveChangesAsync();
             return _mapper.Map<CreditCardDto>(creditCard);
         }
-        public async Task<bool> SetMainCardAsync(int userId, int cardId)
+        public async Task<bool> SetMainCardAsync(Guid userId, Guid cardId)
         {
             var cards = await _context.CreditCards
                 .Where(c => c.UserId == userId)
@@ -100,7 +100,7 @@ namespace APISeasonalTicket.Services
             if (creditCard == null)
                 throw new InvalidOperationException("La tarjeta no existe.");
 
-            // Obtener cuÃ¡ntas tarjetas tiene el usuario
+            // Obtener cuántas tarjetas tiene el usuario
             var totalCards = await _context.CreditCards
                 .CountAsync(c => c.UserId == creditCard.UserId);
 
@@ -108,7 +108,7 @@ namespace APISeasonalTicket.Services
                 throw new InvalidOperationException("No se puede eliminar la tarjeta principal.");
 
             if (totalCards == 1)
-                throw new InvalidOperationException("No se puede eliminar la Ãºnica tarjeta registrada.");
+                throw new InvalidOperationException("No se puede eliminar la única tarjeta registrada.");
 
             _context.CreditCards.Remove(creditCard);
             await _context.SaveChangesAsync();

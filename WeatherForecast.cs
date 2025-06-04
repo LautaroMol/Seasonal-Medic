@@ -1,4 +1,4 @@
-namespace APISeasonalTicket
+namespace APISeasonalMedic
 {
     public class WeatherForecast
     {

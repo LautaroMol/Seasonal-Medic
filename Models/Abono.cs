@@ -1,6 +1,6 @@
-﻿using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.X509Certificates;
 
-namespace APISeasonalTicket.Models
+namespace APISeasonalMedic.Models
 {
     public class Abono : EntityBase
     {
@@ -8,7 +8,7 @@ namespace APISeasonalTicket.Models
         public DateTime CreatedAt { get; set; }
         public decimal MontoMensual { get; set; }
         public string Plan { get; set; } 
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
         public User User { get; set; }
         public DateTime LastDebitDate { get; set; }
         public bool Debit { get; set; } = true;

@@ -1,4 +1,4 @@
-﻿namespace APISeasonalTicket.Models
+namespace APISeasonalMedic.Models
 {
     public class SavedCardResponse
     {

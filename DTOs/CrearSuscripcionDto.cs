@@ -1,8 +1,8 @@
-﻿namespace APISeasonalTicket.DTOs
+namespace APISeasonalMedic.DTOs
 {
     public class CrearSuscripcionDto
     {
-        public int UserId { get; set; } = 0;
+        public Guid UserId { get; set; }
         public decimal MontoMensual { get; set; }
         public string PlanId { get; set; } = string.Empty;
         public string CardToken { get; set; } = string.Empty;

@@ -1,10 +1,10 @@
-Ôªøusing APISeasonalTicket.Data;
-using APISeasonalTicket.DTOs;
-using APISeasonalTicket.Models;
+using APISeasonalMedic.Data;
+using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Models;
 using Microsoft.AspNetCore.Mvc;
 using RestSharp;
 using Newtonsoft.Json;
-using APISeasonalTicket.Services;
+using APISeasonalMedic.Services;
 using System.Net.Http.Headers;
 using MercadoPago.Config;
 using System.Text;
@@ -12,9 +12,11 @@ using MercadoPago.Resource.Customer;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using MercadoPago.Client.Payment;
+using APISeasonalMedic.Services.Interface;
+using System.Security.Claims;
 
 
-namespace APISeasonalTicket.Controllers
+namespace APISeasonalMedic.Controllers
 {
     public class MercadoPagoController : Controller
     {
@@ -54,9 +56,14 @@ namespace APISeasonalTicket.Controllers
         public async Task<IActionResult> GuardarTarjeta([FromBody] NewCreditCardDto dto)
         {
             if (dto == null)
-                return BadRequest(new { message = "Datos inv√°lidos" });
+                return BadRequest(new { message = "Datos inv·lidos" });
 
-            var usuario = await _userService.GetUserByIdAsync(dto.UserId);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userId, out var guid))
+                return Unauthorized();
+
+            var usuario = await _userService.GetUserEntityByIdAsync(guid);
+
             if (usuario == null)
                 return NotFound(new { message = "Usuario no encontrado" });
 
@@ -105,7 +112,7 @@ namespace APISeasonalTicket.Controllers
                 {
                     transaction_amount = testAmount,
                     token = cardToken,
-                    description = "Verificaci√≥n de tarjeta",
+                    description = "VerificaciÛn de tarjeta",
                     installments = 1,
                     payment_method_id = dto.CardType,
                     capture = true,
@@ -134,7 +141,7 @@ namespace APISeasonalTicket.Controllers
                 long paymentId = payData.id;
 
                 // 3. Reembolsar el pago inmediatamente utilizando el endpoint correcto
-                var refundRequest = new { };  // Body vac√≠o para reembolso total
+                var refundRequest = new { };  // Body vacÌo para reembolso total
                 var refundReq = new HttpRequestMessage(HttpMethod.Post, $"https://api.mercadopago.com/v1/payments/{paymentId}/refunds");
                 refundReq.Content = JsonContent.Create(refundRequest);
                 refundReq.Headers.Add("X-Idempotency-Key", Guid.NewGuid().ToString());
@@ -196,7 +203,7 @@ namespace APISeasonalTicket.Controllers
         {
             var token = GetAccessToken();
 
-            // 1Ô∏è Buscar si ya existe el customer en Mercado Pago
+            // 1? Buscar si ya existe el customer en Mercado Pago
             var user = await _userService.GetUserByEmailAsync(dto.Email);
             if (user == null)
             {
@@ -208,7 +215,7 @@ namespace APISeasonalTicket.Controllers
                 return user.CustomerId; // Si ya tiene un CustomerId, lo devolvemos
             }
 
-            // 2Ô∏è Crear el cliente en Mercado Pago
+            // 2? Crear el cliente en Mercado Pago
             var client = new RestClient("https://api.mercadopago.com/v1/customers");
             var request = new RestRequest("", Method.Post);
             request.AddHeader("Authorization", "Bearer " + token);
@@ -242,11 +249,11 @@ namespace APISeasonalTicket.Controllers
             try
             {
                 // Validar entrada
-                if (dto == null || dto.UserId <= 0)
-                    return BadRequest(new { message = "Datos inv√°lidos" });
+                if (dto == null || dto.UserId == Guid.Empty)
+                    return BadRequest(new { message = "Datos inv·lidos" });
 
                 // Buscar usuario y CustomerId
-                var user = await _userService.GetUserByIdAsync(dto.UserId);
+                var user = await _userService.GetUserEntityByIdAsync(dto.UserId);
                 if (user == null)
                     return NotFound(new { message = "Usuario no encontrado" });
 
@@ -292,7 +299,7 @@ namespace APISeasonalTicket.Controllers
                     transaction_amount = 100, // Monto de prueba
                     token = cardToken, // Token de la tarjeta
                     description = "Pago de prueba con tarjeta",
-                    installments = 1, // N√∫mero de cuotas
+                    installments = 1, // N˙mero de cuotas
                     payment_method_id = dto.CardType, // Tipo de tarjeta (ej. "visa", "master")
                     payer = new
                     {
@@ -305,7 +312,7 @@ namespace APISeasonalTicket.Controllers
                     }
                 };
 
-                // Generar un valor √∫nico para el encabezado X-Idempotency-Key
+                // Generar un valor ˙nico para el encabezado X-Idempotency-Key
                 var idempotencyKey = Guid.NewGuid().ToString();
                 httpClient.DefaultRequestHeaders.Add("X-Idempotency-Key", idempotencyKey);
 
@@ -409,17 +416,17 @@ namespace APISeasonalTicket.Controllers
                 request.AddJsonBody(body);
                 var response = await client.ExecuteAsync(request);
 
-                Console.WriteLine($"üìå Respuesta de Mercado Pago: {response.Content}");
+                Console.WriteLine($"?? Respuesta de Mercado Pago: {response.Content}");
 
                 if (!response.IsSuccessful)
                 {
-                    return BadRequest(new { message = "Error al crear suscripci√≥n", error = response.Content });
+                    return BadRequest(new { message = "Error al crear suscripciÛn", error = response.Content });
                 }
 
                 var jsonResponse = JsonConvert.DeserializeObject<dynamic>(response.Content);
                 string subscriptionId = jsonResponse.id;
 
-                // Guardar la suscripci√≥n en la base de datos
+                // Guardar la suscripciÛn en la base de datos
                 var userSubscription = new UserSubscription
                 {
                     UserId = user.Id,
@@ -435,7 +442,7 @@ namespace APISeasonalTicket.Controllers
                 db.UserSubscriptions.Add(userSubscription);
                 await db.SaveChangesAsync();
 
-                return Ok(new { message = "Suscripci√≥n creada exitosamente", subscriptionId });
+                return Ok(new { message = "SuscripciÛn creada exitosamente", subscriptionId });
             }
             catch (Exception ex)
             {
@@ -444,7 +451,7 @@ namespace APISeasonalTicket.Controllers
         }
 
         [HttpPost("marcar-tarjeta-activa/{creditCardId}")]
-        public async Task<IActionResult> MarcarTarjetaActiva(int creditCardId, int userId)
+        public async Task<IActionResult> MarcarTarjetaActiva(Guid creditCardId, Guid userId)
         {
             var cards = await _creditCardService.GetCreditCardsByUserIdAsync(userId);
 
@@ -483,7 +490,7 @@ namespace APISeasonalTicket.Controllers
                 MercadoPagoConfig.AccessToken = GetAccessToken();
 
                 // Obtener el usuario
-                var user = await _userService.GetUserByIdAsync(dto.UserId)
+                var user = await _userService.GetUserEntityByIdAsync(dto.UserId)
                     ?? throw new Exception("Usuario no encontrado");
 
                 // Obtener la tarjeta
@@ -494,7 +501,7 @@ namespace APISeasonalTicket.Controllers
                     throw new Exception("La tarjeta no pertenece al usuario");
 
                 if (string.IsNullOrEmpty(card.CardType))
-                    throw new Exception("El tipo de tarjeta (CardType) no puede estar vac√≠o");
+                    throw new Exception("El tipo de tarjeta (CardType) no puede estar vacÌo");
 
                 // Generar el token de la tarjeta
                 var token = await GenerateCardTokenWithSDK(dto.UserId, dto.CardId, dto.SecurityCode);
@@ -504,22 +511,22 @@ namespace APISeasonalTicket.Controllers
                 {
                     transaction_amount = dto.Amount, // Monto del pago
                     token = token, // Token de la tarjeta
-                    description = "Pago de producto", // Descripci√≥n del producto
-                    installments = 1, // N√∫mero de cuotas
+                    description = "Pago de producto", // DescripciÛn del producto
+                    installments = 1, // N˙mero de cuotas
                     payment_method_id = card.CardType, // Tipo de tarjeta (ej. "visa", "master")
                     payer = new
                     {
                         email = user.Email, // Email del pagador
                         identification = new
                         {
-                            type = "DNI", // Tipo de identificaci√≥n
-                            number = user.DNI // N√∫mero de identificaci√≥n
+                            type = "DNI", // Tipo de identificaciÛn
+                            number = user.DNI // N˙mero de identificaciÛn
                         }
                     }
                 };
 
                 // Configurar las opciones de la solicitud
-                var idempotencyKey = Guid.NewGuid().ToString(); // Generar un valor √∫nico para el encabezado
+                var idempotencyKey = Guid.NewGuid().ToString(); // Generar un valor ˙nico para el encabezado
                 using var httpClient = new HttpClient();
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", MercadoPagoConfig.AccessToken);
                 httpClient.DefaultRequestHeaders.Add("X-Idempotency-Key", idempotencyKey); // Agregar el encabezado
@@ -569,7 +576,7 @@ namespace APISeasonalTicket.Controllers
                 .CountAsync(c => c.UserId == creditCard.UserId);
 
             if (totalCards == 1)
-                throw new InvalidOperationException("No se puede eliminar la √∫nica tarjeta registrada.");
+                throw new InvalidOperationException("No se puede eliminar la ˙nica tarjeta registrada.");
 
             var accessToken = GetAccessToken();
 
@@ -597,21 +604,21 @@ namespace APISeasonalTicket.Controllers
             };
         }
 
-        private async Task<string> GenerateCardTokenWithSDK(int userId, int cardDbId, string securityCode)
+        private async Task<string> GenerateCardTokenWithSDK(Guid userId, int cardDbId, string securityCode)
         {
             // Configurar el access token antes de usar el SDK
             MercadoPagoConfig.AccessToken = GetAccessToken();
 
-            var user = await _userService.GetUserByIdAsync(userId);
+            var user = await _userService.GetUserEntityByIdAsync(userId);
             if (user == null || string.IsNullOrEmpty(user.CustomerId))
-                throw new Exception("Usuario inv√°lido o sin CustomerId");
+                throw new Exception("Usuario inv·lido o sin CustomerId");
 
             var card = await _creditCardService.GetCreditCardByIdAsync(cardDbId);
             if (card == null || card.UserId != userId)
                 throw new Exception("Tarjeta no encontrada o no pertenece al usuario");
 
             if (string.IsNullOrEmpty(card.CardId))
-                throw new Exception("CardId (de MercadoPago) no est√° guardado en la base de datos");
+                throw new Exception("CardId (de MercadoPago) no est· guardado en la base de datos");
 
             var client = new MercadoPago.Client.CardToken.CardTokenClient();
 
@@ -625,9 +632,9 @@ namespace APISeasonalTicket.Controllers
             var cardToken = await client.CreateAsync(cardTokenRequest);
 
             if (string.IsNullOrEmpty(cardToken?.Id))
-                throw new Exception("‚ùå No se pudo generar el token de la tarjeta");
+                throw new Exception("? No se pudo generar el token de la tarjeta");
 
-            Console.WriteLine($"‚úÖ Token generado correctamente: {cardToken.Id}");
+            Console.WriteLine($"? Token generado correctamente: {cardToken.Id}");
             return cardToken.Id;
         }
 
@@ -648,7 +655,7 @@ namespace APISeasonalTicket.Controllers
             request.AddJsonBody(body);
             var response = await client.ExecuteAsync(request);
 
-            Console.WriteLine($"üìå Respuesta de generaci√≥n de token: {response.Content}");
+            Console.WriteLine($"?? Respuesta de generaciÛn de token: {response.Content}");
 
             if (!response.IsSuccessful)
             {
@@ -676,7 +683,7 @@ namespace APISeasonalTicket.Controllers
                 {
                     frequency = 1,
                     frequency_type = "months",
-                    transaction_amount = 100.00,  // Monto de la suscripci√≥n
+                    transaction_amount = 100.00,  // Monto de la suscripciÛn
                     currency_id = "ARS",
                     start_date = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
                     end_date = DateTime.UtcNow.AddYears(1).ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
@@ -685,11 +692,11 @@ namespace APISeasonalTicket.Controllers
 
             request.AddJsonBody(body);
             var response = await client.ExecuteAsync(request);
-            Console.WriteLine($"üì¢ Respuesta de creaci√≥n del plan: {response.Content}");
+            Console.WriteLine($"?? Respuesta de creaciÛn del plan: {response.Content}");
 
             if (!response.IsSuccessful)
             {
-                throw new Exception($"‚ùå Error al crear el plan de suscripci√≥n: {response.Content}");
+                throw new Exception($"? Error al crear el plan de suscripciÛn: {response.Content}");
             }
 
             var jsonResponse = JsonConvert.DeserializeObject<dynamic>(response.Content);

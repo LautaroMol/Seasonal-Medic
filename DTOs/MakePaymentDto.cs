@@ -1,8 +1,8 @@
-﻿namespace APISeasonalTicket.DTOs
+namespace APISeasonalMedic.DTOs
 {
     public class MakePaymentDto
     {
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
         public int CardId { get; set; }
         public string SecurityCode { get; set; }
         public decimal Amount { get; set; }
