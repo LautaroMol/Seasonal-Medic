@@ -23,8 +23,10 @@ namespace APISeasonalMedic.Models
         public string? CardToken { get; set; }
         public string? ProfileImageUrl { get; set; }
         public bool IsActive { get; set; }
+        public DateTime? VerificationCodeExpiry { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public virtual ICollection<ConsultaMedica> Consultas { get; set; } = new List<ConsultaMedica>();
         public virtual ICollection<CreditCard> Cards { get; set; }
         public virtual Abono Abono { get; set; }
         public List<string> Roles { get; set; } = new List<string>();

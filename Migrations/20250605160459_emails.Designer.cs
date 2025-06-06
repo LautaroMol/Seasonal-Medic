@@ -4,6 +4,7 @@ using APISeasonalMedic.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace APISeasonalMedic.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250605160459_emails")]
+    partial class emails
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -62,41 +65,6 @@ namespace APISeasonalMedic.Migrations
                         .IsUnique();
 
                     b.ToTable("Abonos");
-                });
-
-            modelBuilder.Entity("APISeasonalMedic.Models.ConsultaMedica", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("Active")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Descripcion")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Especialidad")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("Fecha")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Medico")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("ConsultasMedicas");
                 });
 
             modelBuilder.Entity("APISeasonalMedic.Models.CreditCard", b =>
@@ -490,17 +458,6 @@ namespace APISeasonalMedic.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("APISeasonalMedic.Models.ConsultaMedica", b =>
-                {
-                    b.HasOne("APISeasonalMedic.Models.User", "Usuario")
-                        .WithMany("Consultas")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Usuario");
-                });
-
             modelBuilder.Entity("APISeasonalMedic.Models.CreditCard", b =>
                 {
                     b.HasOne("APISeasonalMedic.Models.User", "User")
@@ -596,8 +553,6 @@ namespace APISeasonalMedic.Migrations
                         .IsRequired();
 
                     b.Navigation("Cards");
-
-                    b.Navigation("Consultas");
                 });
 #pragma warning restore 612, 618
         }

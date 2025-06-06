@@ -1,12 +1,12 @@
 ﻿using APISeasonalMedic.DTOs;
 using System.Security.Claims;
 
-namespace APISeasonalMedic.Services
+namespace APISeasonalMedic.Services.Interface
 {
     public interface IJwtService
     {
-        JwtResult GenerateToken(Guid userId, string email, List<string> roles);
         string GenerateRefreshToken();
+        JwtResult GenerateToken(Guid userId, string email, List<string> roles, bool emailConfirmed = false);
         ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
     }
 }

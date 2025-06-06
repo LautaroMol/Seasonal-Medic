@@ -1,4 +1,5 @@
 ﻿using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Services.Interface;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -15,17 +16,18 @@ namespace APISeasonalMedic.Services
             _configuration = configuration;
         }
 
-        public JwtResult GenerateToken(Guid userId, string email, List<string> roles)
+        //Método actualizado para incluir emailConfirmed
+        public JwtResult GenerateToken(Guid userId, string email, List<string> roles, bool emailConfirmed = false)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_configuration["JWT:Key"]);
-
             var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-        new Claim(ClaimTypes.Email, email),
-        new Claim(ClaimTypes.Name, email)
-    };
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.Email, email),
+                new Claim(ClaimTypes.Name, email),
+                new Claim("EmailConfirmed", emailConfirmed.ToString())
+            };
 
             foreach (var role in roles)
             {
@@ -33,7 +35,7 @@ namespace APISeasonalMedic.Services
             }
 
             var now = DateTime.UtcNow;
-            var expires = now.AddHours(Convert.ToDouble(_configuration["JWT:DurationInDays"] ?? "2")); 
+            var expires = now.AddHours(Convert.ToDouble(_configuration["JWT:DurationInDays"] ?? "2"));
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -47,14 +49,12 @@ namespace APISeasonalMedic.Services
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
-
             return new JwtResult
             {
                 Token = tokenHandler.WriteToken(token),
                 ExpiresAt = expires
             };
         }
-
 
         public string GenerateRefreshToken()
         {

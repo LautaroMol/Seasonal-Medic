@@ -4,6 +4,7 @@ using APISeasonalMedic.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace APISeasonalMedic.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250606172950_consulta")]
+    partial class consulta
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -493,7 +496,7 @@ namespace APISeasonalMedic.Migrations
             modelBuilder.Entity("APISeasonalMedic.Models.ConsultaMedica", b =>
                 {
                     b.HasOne("APISeasonalMedic.Models.User", "Usuario")
-                        .WithMany("Consultas")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -596,8 +599,6 @@ namespace APISeasonalMedic.Migrations
                         .IsRequired();
 
                     b.Navigation("Cards");
-
-                    b.Navigation("Consultas");
                 });
 #pragma warning restore 612, 618
         }

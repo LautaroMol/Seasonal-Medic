@@ -16,7 +16,7 @@ namespace APISeasonalMedic.Data
         public DbSet<MovimientosAbono> MovimientosAbonos { get; set; }
         public DbSet<CreditCard> CreditCards { get; set; }
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
-
+        public DbSet<ConsultaMedica> ConsultasMedicas { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -56,6 +56,10 @@ namespace APISeasonalMedic.Data
             {
                 entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
             });
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.Consultas)
+                .WithOne(c => c.Usuario)
+                .HasForeignKey(c => c.UserId);
         }
 
     }

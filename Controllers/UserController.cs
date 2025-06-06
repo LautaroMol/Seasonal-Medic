@@ -1,7 +1,14 @@
 ﻿using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Models;
 using APISeasonalMedic.Services;
+using APISeasonalMedic.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Text.RegularExpressions;
+using static APISeasonalMedic.Services.UserService;
 
 
 namespace APISeasonalMedic.Controllers
@@ -11,41 +18,133 @@ namespace APISeasonalMedic.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
-
-        public UserController(IUserService userService)
+        private IMessageService _mailService;
+        private readonly MercadoPagoService _mercadoPagoService;
+        private readonly IConfiguration _configuration;
+        private UserManager<User> _userManager;
+        public UserController(IUserService userService, MercadoPagoService mercadoPagoService,IMessageService mailService,
+            IConfiguration configuration,UserManager<User> userManager)
         {
             _userService = userService;
+            _mercadoPagoService = mercadoPagoService;
+            _mailService = mailService;
+            _configuration = configuration;
+            _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+
         }
 
-        // POST: api/user/register
-        [HttpPost("register")]
-        [AllowAnonymous]
-        public async Task<ActionResult<UserDto>> Register([FromBody] RegisterDto dto)
+        [HttpPost("Register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto register)
         {
             try
             {
-                var result = await _userService.RegisterAsync(dto);
-                return Ok(result);
+                var userDto = await _userService.RegisterAsync(register);
+                return Ok(new
+                {
+                    message = "Usuario creado exitosamente. Revisa tu email para obtener el código de confirmación.",
+                    user = userDto
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Ocurrió un error inesperado durante el registro.", details = ex.Message });
             }
         }
 
+        [HttpPost("resend-code")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResendCode([FromQuery] string email)
+        {
+            try
+            {
+                await _userService.ResendVerificationCodeAsync(email);
+                return Ok(new { message = "Código reenviado correctamente." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { error = "EMAIL_ALREADY_CONFIRMED", message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { error = "USER_NOT_FOUND", message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "SERVER_ERROR", message = ex.Message });
+            }
+        }
+
+        [HttpPost("ConfirmEmail")]
+        public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailDto model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.VerificationCode))
+            {
+                return BadRequest(new { success = false, message = "Email y código de verificación son requeridos." });
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                return BadRequest(new { success = false, message = "Usuario no encontrado." });
+            }
+
+            if (user.EmailConfirmed)
+            {
+                return Ok(new { success = true, message = "El email ya fue confirmado previamente." });
+            }
+
+            if (user.VerificationCode != model.VerificationCode)
+            {
+                return BadRequest(new { success = false, message = "Código de verificación incorrecto." });
+            }
+
+             // validacion de que no este expirado
+             if (user.VerificationCodeExpiry.HasValue && user.VerificationCodeExpiry < DateTime.UtcNow)
+             {
+                 return BadRequest(new { success = false, message = "El código de verificación ha expirado." });
+            }
+
+            user.EmailConfirmed = true;
+            user.VerificationCode = null;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                return StatusCode(500, new { success = false, message = "Error al actualizar el estado de confirmación." });
+            }
+
+            return Ok(new { success = true, message = "Email confirmado correctamente." });
+        }
         // POST: api/user/login
         [HttpPost("login")]
         [AllowAnonymous]
-        public async Task<ActionResult<LoginResponseDto>> Login([FromBody] LoginDTO dto)
+        public async Task<IActionResult> Login([FromBody] LoginDTO dto)
         {
             try
             {
                 var result = await _userService.LoginAsync(dto);
                 return Ok(result);
             }
+            catch (EmailNotConfirmedException ex)
+            {
+                return StatusCode(403, new
+                {
+                    error = "EMAIL_NOT_CONFIRMED",
+                    message = ex.Message,
+                    info = ex.Info
+                });
+            }
             catch (UnauthorizedAccessException ex)
             {
-                return Unauthorized(ex.Message);
+                return Unauthorized(new { error = "INVALID_CREDENTIALS", message = ex.Message });
             }
         }
 
@@ -90,6 +189,24 @@ namespace APISeasonalMedic.Controllers
                 return NotFound(ex.Message);
             }
         }
+        [Authorize]
+        [HttpPut("profile-image-url")]
+        public async Task<IActionResult> UpdateProfileImageUrl([FromBody] UpdateProfileImageUrlDto dto)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null) return Unauthorized();
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            user.ProfileImageUrl = dto.ProfileImageUrl;
+            var result = await _userManager.UpdateAsync(user);
+
+            if (!result.Succeeded)
+                return BadRequest("No se pudo actualizar la imagen de perfil.");
+
+            return Ok(new { ImageUrl = dto.ProfileImageUrl });
+        }
 
         // DELETE: api/user/me
         [HttpDelete("me")]
@@ -123,6 +240,11 @@ namespace APISeasonalMedic.Controllers
 
             var available = await _userService.GetMailAvailabilityAsync(email);
             return Ok(available);
+        }
+        [HttpGet("ping")]
+        public IActionResult Ping()
+        {
+            return Ok("pong");
         }
     }
 }
