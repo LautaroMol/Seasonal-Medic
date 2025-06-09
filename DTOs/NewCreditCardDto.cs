@@ -4,7 +4,6 @@ namespace APISeasonalMedic.DTOs
 {
     public class NewCreditCardDto
     {
-        public Guid UserId { get; set; }
         public long CardNumber { get; set; }
         public int ExpirationMonth { get; set; }
         public int ExpirationYear { get; set; }

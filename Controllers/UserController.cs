@@ -22,14 +22,16 @@ namespace APISeasonalMedic.Controllers
         private readonly MercadoPagoService _mercadoPagoService;
         private readonly IConfiguration _configuration;
         private UserManager<User> _userManager;
+        private readonly CloudinaryService _cloudinaryService;
         public UserController(IUserService userService, MercadoPagoService mercadoPagoService,IMessageService mailService,
-            IConfiguration configuration,UserManager<User> userManager)
+            IConfiguration configuration,UserManager<User> userManager,CloudinaryService cloudinaryService)
         {
             _userService = userService;
             _mercadoPagoService = mercadoPagoService;
             _mailService = mailService;
             _configuration = configuration;
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+            _cloudinaryService = cloudinaryService;
 
         }
 
@@ -189,24 +191,6 @@ namespace APISeasonalMedic.Controllers
                 return NotFound(ex.Message);
             }
         }
-        [Authorize]
-        [HttpPut("profile-image-url")]
-        public async Task<IActionResult> UpdateProfileImageUrl([FromBody] UpdateProfileImageUrlDto dto)
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null) return Unauthorized();
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) return NotFound();
-
-            user.ProfileImageUrl = dto.ProfileImageUrl;
-            var result = await _userManager.UpdateAsync(user);
-
-            if (!result.Succeeded)
-                return BadRequest("No se pudo actualizar la imagen de perfil.");
-
-            return Ok(new { ImageUrl = dto.ProfileImageUrl });
-        }
 
         // DELETE: api/user/me
         [HttpDelete("me")]
@@ -245,6 +229,131 @@ namespace APISeasonalMedic.Controllers
         public IActionResult Ping()
         {
             return Ok("pong");
+        }
+        //imagenes
+        [Authorize]
+        [HttpPut("profile-image")]
+        public async Task<IActionResult> UpdateProfileImageUrl([FromBody] UpdateProfileImageUrlDto dto)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null) return Unauthorized();
+
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null) return NotFound("Usuario no encontrado");
+
+                // OBTENER LA URL ANTERIOR ANTES DE ACTUALIZAR
+                var oldImageUrl = user.ProfileImageUrl;
+
+                // Actualizar la nueva imagen en la base de datos
+                user.ProfileImageUrl = dto.ProfileImageUrl;
+                var result = await _userManager.UpdateAsync(user);
+
+                if (!result.Succeeded)
+                    return BadRequest("No se pudo actualizar la imagen de perfil.");
+
+                // Eliminar la imagen anterior de Cloudinary (si existe y es diferente)
+                if (!string.IsNullOrEmpty(oldImageUrl) &&
+                    oldImageUrl != dto.ProfileImageUrl &&
+                    oldImageUrl.Contains("cloudinary.com"))
+                {
+                    // ELIMINAR INMEDIATAMENTE, NO EN BACKGROUND
+                    try
+                    {
+                        var deleteResult = await _cloudinaryService.DeleteImageAsync(oldImageUrl);
+                        if (!deleteResult)
+                        {
+                            // Log warning but don't fail the request
+                            Console.WriteLine($"Warning: No se pudo eliminar la imagen anterior: {oldImageUrl}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error but don't fail the request
+                        Console.WriteLine($"Error eliminando imagen anterior: {ex.Message}");
+                    }
+                }
+
+                return Ok(new
+                {
+                    message = "Imagen actualizada correctamente",
+                    imageUrl = dto.ProfileImageUrl
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = "Error interno del servidor",
+                    message = ex.Message
+                });
+            }
+        }
+
+        [Authorize]
+        [HttpDelete("profile-image")]
+        public async Task<IActionResult> DeleteProfileImage()
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null) return Unauthorized();
+
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null) return NotFound("Usuario no encontrado");
+
+                var currentImageUrl = user.ProfileImageUrl;
+
+                // Verificar si hay imagen para eliminar
+                if (string.IsNullOrEmpty(currentImageUrl))
+                {
+                    return Ok(new { message = "No hay imagen para eliminar" });
+                }
+
+                // PRIMERO eliminar de Cloudinary ANTES de actualizar la base de datos
+                if (currentImageUrl.Contains("cloudinary.com"))
+                {
+                    try
+                    {
+                        Console.WriteLine($"Intentando eliminar imagen de Cloudinary: {currentImageUrl}");
+                        var deleteResult = await _cloudinaryService.DeleteImageAsync(currentImageUrl);
+
+                        if (!deleteResult)
+                        {
+                            Console.WriteLine("Warning: No se pudo eliminar la imagen de Cloudinary");
+                            // Continuar de todos modos para limpiar la base de datos
+                        }
+                        else
+                        {
+                            Console.WriteLine("Imagen eliminada exitosamente de Cloudinary");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error eliminando de Cloudinary: {ex.Message}");
+                        // Continuar de todos modos para limpiar la base de datos
+                    }
+                }
+
+                // DESPUÉS actualizar la base de datos
+                user.ProfileImageUrl = string.Empty;
+                var result = await _userManager.UpdateAsync(user);
+
+                if (!result.Succeeded)
+                    return BadRequest("No se pudo eliminar la imagen de perfil de la base de datos.");
+
+                return Ok(new { message = "Imagen eliminada correctamente" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error general en DeleteProfileImage: {ex.Message}");
+                return StatusCode(500, new
+                {
+                    error = "Error interno del servidor",
+                    message = ex.Message
+                });
+            }
         }
     }
 }

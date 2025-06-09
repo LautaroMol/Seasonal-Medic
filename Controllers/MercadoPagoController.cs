@@ -248,12 +248,20 @@ namespace APISeasonalMedic.Controllers
         {
             try
             {
+                // Obtener el UserId del token JWT
+                var userIdClaim = HttpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                    return Unauthorized(new { message = "Token inválido o faltante" });
+
+                if (!Guid.TryParse(userIdClaim.Value, out var userId))
+                    return BadRequest(new { message = "ID de usuario inválido en el token" });
+
                 // Validar entrada
-                if (dto == null || dto.UserId == Guid.Empty)
+                if (dto == null)
                     return BadRequest(new { message = "Datos inválidos" });
 
                 // Buscar usuario y CustomerId
-                var user = await _userService.GetUserEntityByIdAsync(dto.UserId);
+                var user = await _userService.GetUserEntityByIdAsync(userId);
                 if (user == null)
                     return NotFound(new { message = "Usuario no encontrado" });
 

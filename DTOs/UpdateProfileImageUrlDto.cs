@@ -4,8 +4,7 @@ namespace APISeasonalMedic.DTOs
 {
     public class UpdateProfileImageUrlDto
     {
-        [Required]
-        [Url]
-        public string ProfileImageUrl { get; set; }
+        [Url(ErrorMessage = "La URL de la imagen no es válida")]
+        public string? ProfileImageUrl { get; set; }
     }
 }

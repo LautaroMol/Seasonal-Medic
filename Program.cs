@@ -40,6 +40,9 @@ builder.Services.AddScoped<MercadoPagoService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IConsultaMedicaService, ConsultaMedicaService>();
+builder.Services.AddScoped<CloudinaryService>();
+
+
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -154,15 +157,25 @@ app.MapGet("/api/card/{id}", async(ICreditCardService creditCardService, int id)
     }
     return Results.NotFound();
 });
-app.MapGet("/api/card/user/{userId}", async (ICreditCardService creditCardService, Guid userId) =>
+app.MapGet("/api/card/user", async (
+    ICreditCardService creditCardService,
+    HttpContext httpContext) =>
 {
+    var userIdClaim = httpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+    if (userIdClaim == null)
+        return Results.Unauthorized();
+
+    if (!Guid.TryParse(userIdClaim.Value, out var userId))
+        return Results.BadRequest("ID de usuario inválido");
+
     var cards = await creditCardService.GetCreditCardsByUserIdAsync(userId);
     if (cards.Any())
     {
         return Results.Ok(cards);
     }
     return Results.NotFound("No hay tarjetas guardadas para este usuario.");
-});
+}).RequireAuthorization();
+
 app.MapPut("/api/cards/set-main", async (
     SetMainCardRequest request,
     ICreditCardService cardService,

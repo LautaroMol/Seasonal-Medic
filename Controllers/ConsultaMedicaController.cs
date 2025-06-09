@@ -16,7 +16,7 @@ namespace APISeasonalMedic.Controllers
             _service = service;
         }
 
-        // ✅ Solicitar nueva consulta (usuario autenticado)
+        // Solicitar nueva consulta (usuario autenticado)
         [HttpPost]
         [Authorize]
         public async Task<ActionResult<ConsultaMedicaDto>> CrearConsulta([FromBody] CreateConsultaMedicaDto dto)

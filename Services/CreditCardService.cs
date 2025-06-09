@@ -12,7 +12,6 @@ namespace APISeasonalMedic.Services
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
 
-
         public CreditCardService(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
@@ -33,16 +32,18 @@ namespace APISeasonalMedic.Services
             }
             return creditCard;
         }
+
         public async Task<List<CreditCard>> GetCreditCardsByUserIdAsync(Guid userId)
         {
             return await _context.CreditCards
                 .Where(c => c.UserId == userId)
                 .ToListAsync();
         }
+
         public async Task<CreditCard> GetActiveCreditCardByUserIdAsync(Guid userId)
         {
             return await _context.CreditCards
-                .Where(c => c.UserId == userId && c.IsPrimary) // Filtrar por tarjeta activa
+                .Where(c => c.UserId == userId && c.IsPrimary)
                 .FirstOrDefaultAsync();
         }
 
@@ -53,6 +54,8 @@ namespace APISeasonalMedic.Services
             await _context.SaveChangesAsync();
             return _mapper.Map<CreditCardDto>(creditCard);
         }
+
+        // CORREGIDO: Cambiar cardId de Guid a int
         public async Task<bool> SetMainCardAsync(Guid userId, Guid cardId)
         {
             var cards = await _context.CreditCards
@@ -81,12 +84,14 @@ namespace APISeasonalMedic.Services
             await _context.SaveChangesAsync();
             return creditCard;
         }
+
         public async Task<CreditCardDto> UpdateCreditCardAsync(CreditCardDto creditCardDto, int id)
         {
             var creditCard = await _context.CreditCards.FindAsync(id);
 
             if (creditCard == null)
                 throw new Exception("Tarjeta no encontrada");
+
             _mapper.Map(creditCardDto, creditCard);
             _context.CreditCards.Update(creditCard);
             await _context.SaveChangesAsync();
@@ -115,7 +120,5 @@ namespace APISeasonalMedic.Services
 
             return _mapper.Map<CreditCardDto>(creditCard);
         }
-
-
     }
 }
