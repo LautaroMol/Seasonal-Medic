@@ -1,17 +1,36 @@
 using APISeasonalMedic.DTOs;
 using APISeasonalMedic.Services.Interface;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace APISeasonalMedic.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] 
     public class AbonoController : ControllerBase
     {
         private readonly IAbonoService _abonoService;
-        public AbonoController (IAbonoService abonoService)
+
+        public AbonoController(IAbonoService abonoService)
         {
             _abonoService = abonoService;
+        }
+
+        // Método auxiliar para obtener el UserId del JWT
+        private Guid GetUserIdFromToken()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
+                             User.FindFirst("sub")?.Value ??
+                             User.FindFirst("userId")?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+            {
+                throw new UnauthorizedAccessException("Token inválido o userId no encontrado");
+            }
+
+            return userId;
         }
 
         [HttpGet]
@@ -24,50 +43,108 @@ namespace APISeasonalMedic.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetAbonoById(int id)
+        public async Task<IActionResult> GetAbonoById(Guid id)
         {
             var abono = await _abonoService.GetAbonoByIdAsync(id);
             if (abono == null)
                 return NotFound();
             return Ok(abono);
         }
-        [HttpGet("/user/{userId}")]
-        public async Task<IActionResult> GetAbonoByUserId(Guid userId)
+
+        // CAMBIADO: Ahora obtiene el UserId del JWT en lugar de recibirlo como parámetro
+        [HttpGet("user")]
+        public async Task<IActionResult> GetAbonoByUserId()
         {
-            var abono = await _abonoService.GetAbonoByUserId(userId);
-            if (abono == null)
-                return NotFound();
-            return Ok(abono);
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var abono = await _abonoService.GetAbonoByUserId(userId);
+                if (abono == null)
+                    return NotFound();
+                return Ok(abono);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
         }
+
         [HttpPost]
-        public async Task<IActionResult> Post(AbonoDto abonoDto)
+        public async Task<IActionResult> Post(CreateAbonoDto abonoDto)
         {
-            var abono = await _abonoService.Post(abonoDto);
-            return Ok(abono);
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var abono = await _abonoService.Post(abonoDto, userId);
+                return Ok(abono);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
         }
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Put([FromBody] AbonoDto abonoDto, int id)
+
+        [HttpPut]
+        public async Task<IActionResult> Update([FromBody] UpdateAbonoDto dto)
         {
-            var abono = await _abonoService.Update(abonoDto, id);
-            if (abono == null)
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var existing = await _abonoService.GetAbonoByIdAsync(dto.Id);
+                if (existing.UserId != userId)
+                    return Forbid();
+
+                var updated = await _abonoService.Update(dto);
+                return Ok(updated);
+            }
+            catch (KeyNotFoundException)
+            {
                 return NotFound();
-            return Ok(abono);
+            }
         }
+
         [HttpPatch("{id}/debit")]
-        public async Task<IActionResult> UpdateDebit(int id, [FromBody] bool debit)
+        public async Task<IActionResult> UpdateDebit(Guid id, [FromBody] bool debit)
         {
-            var abono = await _abonoService.UpdateDebit(id, debit);
-            if (abono == null)
-                return NotFound();
-            return Ok(abono);
+            try
+            {
+                var userId = GetUserIdFromToken();
+                // Verificar que el abono pertenece al usuario autenticado
+                var existingAbono = await _abonoService.GetAbonoByIdAsync(id);
+                if (existingAbono?.UserId != userId)
+                {
+                    return Forbid("No tienes permisos para modificar este abono");
+                }
+
+                var abono = await _abonoService.UpdateDebit(id, debit);
+                if (abono == null)
+                    return NotFound();
+                return Ok(abono);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
         }
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
+
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> Delete(Guid id)
         {
-            var abono = await _abonoService.Delete(id);
-            if (abono == null)
+            try
+            {
+                var userId = GetUserIdFromToken();
+                var existing = await _abonoService.GetAbonoByIdAsync(id);
+                if (existing.UserId != userId)
+                    return Forbid();
+
+                await _abonoService.Delete(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
                 return NotFound();
-            return Ok(abono);
+            }
         }
+
     }
 }

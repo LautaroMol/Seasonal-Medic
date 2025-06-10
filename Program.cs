@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -20,7 +21,37 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// CONFIGURACIÓN DE SWAGGER CON JWT 
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Seasonal Medic API", Version = "v1" });
+
+    // Configuración de seguridad JWT para Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 
 //db
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -174,7 +205,10 @@ app.MapGet("/api/card/user", async (
         return Results.Ok(cards);
     }
     return Results.NotFound("No hay tarjetas guardadas para este usuario.");
-}).RequireAuthorization();
+})
+.RequireAuthorization()
+.WithName("GetUserCards")
+.WithTags("Cards");
 
 app.MapPut("/api/cards/set-main", async (
     SetMainCardRequest request,
@@ -194,9 +228,10 @@ app.MapPut("/api/cards/set-main", async (
         return Results.BadRequest("No se pudo actualizar la tarjeta principal.");
 
     return Results.Ok("Tarjeta principal actualizada correctamente.");
-});
-//.RequireAuthorization(); 
-
+})
+.RequireAuthorization()
+.WithName("SetMainCard")
+.WithTags("Cards");
 
 app.MapPost("/api/card", async (ICreditCardService creditCardService, CreditCardDto creditCard) =>
 {
@@ -273,8 +308,6 @@ app.MapDelete("/api/movimiento/{id}", async (IMovimientosAbonoService movimiento
 
 #endregion
 
-
-
 app.Run();
 
 public static class IdentityDataInitializer
@@ -283,7 +316,7 @@ public static class IdentityDataInitializer
     {
         var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
 
-        string[] roles = { "Admin", "Supervisor", "User" };
+        string[] roles = { "Admin", "Agente", "User" };
 
         foreach (var role in roles)
         {

@@ -13,6 +13,9 @@ namespace APISeasonalMedic.DTOs
             CreateMap<MovimientosAbono, MovAbonosDto>().ReverseMap();
             CreateMap<User, UserDto>();
             CreateMap<RegisterDto, User>();
+            CreateMap<CreateAbonoDto, Abono>();
+            CreateMap<Abono, AbonoDto>();
+            CreateMap<AbonoDto, Abono>();
             CreateMap<ConsultaMedica, ConsultaMedicaDto>()
                 .ForMember(dest => dest.NombreCompleto, opt =>
                     opt.MapFrom(src => src.Usuario.FirstName + " " + src.Usuario.LastName))

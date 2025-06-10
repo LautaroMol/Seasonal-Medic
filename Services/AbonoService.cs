@@ -18,62 +18,69 @@ namespace APISeasonalMedic.Services
             _mapper = mapper;
         }
 
-        public async Task<Abono> GetAbonoByIdAsync(int id)
+        public async Task<Abono> GetAbonoByIdAsync(Guid id)
         {
-            var abono = await _context.Abonos.FindAsync(id);
-            return abono;
+            return await _context.Abonos.FindAsync(id);
         }
+
         public async Task<List<Abono>> GetAll()
         {
-            var abonos = await _context.Abonos.ToListAsync();
-            return abonos;
+            return await _context.Abonos.ToListAsync();
         }
+
         public async Task<Abono> GetAbonoByUserId(Guid userId)
         {
-            var abono = await _context.Abonos
-                .Where(c => c.UserId == userId)
-                .FirstOrDefaultAsync();
-            return abono;
+            return await _context.Abonos
+                .FirstOrDefaultAsync(c => c.UserId == userId);
         }
-        public async Task<AbonoDto> Post(AbonoDto abonodto)
+
+        public async Task<AbonoDto> Post(CreateAbonoDto dto, Guid userId)
         {
-            var abono = _mapper.Map<Abono>(abonodto);
-            abono.LastDebitDate = abonodto.LastDebitDate.AddMonths(1);
+            var abono = _mapper.Map<Abono>(dto);
+            abono.UserId = userId;
+            abono.LastDebitDate = dto.LastDebitDate.AddMonths(1);
             await _context.Abonos.AddAsync(abono);
             await _context.SaveChangesAsync();
             return _mapper.Map<AbonoDto>(abono);
         }
-        public async Task<AbonoDto> Update(AbonoDto abonodto, int id)
-        {
-            var abono = await _context.Abonos.FindAsync(id);
-            if (abono == null)
-            {
-                throw new Exception("Abono no encontrado");
-            }
 
-            _mapper.Map(abonodto, abono);
+        public async Task<AbonoDto> Update(UpdateAbonoDto dto)
+        {
+            var abono = await _context.Abonos.FindAsync(dto.Id);
+            if (abono == null)
+                throw new KeyNotFoundException("Abono no encontrado");
+
+            // Mapea solo propiedades editables
+            abono.Total = dto.Total;
+            abono.Plan = dto.Plan;
+            abono.MontoMensual = dto.MontoMensual;
+            abono.LastDebitDate = dto.LastDebitDate;
+
             _context.Abonos.Update(abono);
             await _context.SaveChangesAsync();
             return _mapper.Map<AbonoDto>(abono);
         }
-        public async Task<AbonoDto> Delete(int id)
-        {
-            var abono = await _context.Abonos.FindAsync(id);
-            _context.Abonos.Remove(abono);
-            await _context.SaveChangesAsync();
-            return _mapper.Map<AbonoDto>(abono);
-        }
-        public async Task<Abono> UpdateDebit(int id, bool debit)
+
+        public async Task Delete(Guid id)
         {
             var abono = await _context.Abonos.FindAsync(id);
             if (abono == null)
-                return null;
+                throw new KeyNotFoundException("Abono no encontrado");
+
+            _context.Abonos.Remove(abono);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<AbonoDto> UpdateDebit(Guid id, bool debit)
+        {
+            var abono = await _context.Abonos.FindAsync(id);
+            if (abono == null)
+                throw new KeyNotFoundException("Abono no encontrado");
 
             abono.Debit = debit;
             _context.Abonos.Update(abono);
             await _context.SaveChangesAsync();
-
-            return abono;
+            return _mapper.Map<AbonoDto>(abono);
         }
     }
 }

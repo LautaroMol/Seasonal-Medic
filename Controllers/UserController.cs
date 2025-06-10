@@ -23,8 +23,8 @@ namespace APISeasonalMedic.Controllers
         private readonly IConfiguration _configuration;
         private UserManager<User> _userManager;
         private readonly CloudinaryService _cloudinaryService;
-        public UserController(IUserService userService, MercadoPagoService mercadoPagoService,IMessageService mailService,
-            IConfiguration configuration,UserManager<User> userManager,CloudinaryService cloudinaryService)
+        public UserController(IUserService userService, MercadoPagoService mercadoPagoService, IMessageService mailService,
+            IConfiguration configuration, UserManager<User> userManager, CloudinaryService cloudinaryService)
         {
             _userService = userService;
             _mercadoPagoService = mercadoPagoService;
@@ -108,10 +108,10 @@ namespace APISeasonalMedic.Controllers
                 return BadRequest(new { success = false, message = "Código de verificación incorrecto." });
             }
 
-             // validacion de que no este expirado
-             if (user.VerificationCodeExpiry.HasValue && user.VerificationCodeExpiry < DateTime.UtcNow)
-             {
-                 return BadRequest(new { success = false, message = "El código de verificación ha expirado." });
+            // validacion de que no este expirado
+            if (user.VerificationCodeExpiry.HasValue && user.VerificationCodeExpiry < DateTime.UtcNow)
+            {
+                return BadRequest(new { success = false, message = "El código de verificación ha expirado." });
             }
 
             user.EmailConfirmed = true;
@@ -355,5 +355,111 @@ namespace APISeasonalMedic.Controllers
                 });
             }
         }
+
+        #region agentes
+
+        [HttpPost("register-agent")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RegisterAgent([FromBody] RegisterDto register)
+        {
+            try
+            {
+                var userDto = await _userService.RegisterAgentAsync(register);
+                return Ok(new
+                {
+                    message = "Agente creado exitosamente. Revisa tu email para obtener el código de confirmación.",
+                    user = userDto
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Ocurrió un error inesperado durante el registro del agente.", details = ex.Message });
+            }
+        }
+
+        [HttpGet("users")]
+        [Authorize(Roles = "Agente,Admin")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            try
+            {
+                var users = await _userService.GetAllUsersAsync();
+                return Ok(new
+                {
+                    message = "Usuarios obtenidos exitosamente.",
+                    users = users,
+                    count = users.Count
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Error al obtener los usuarios.", details = ex.Message });
+            }
+        }
+
+        [HttpGet("search-by-dni")]
+        [Authorize(Roles = "Agente,Admin")]
+        public async Task<IActionResult> SearchUserByDni([FromQuery] string dni)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dni))
+                {
+                    return BadRequest(new { error = "El DNI es requerido." });
+                }
+
+                var user = await _userService.GetUserByDniAsync(dni);
+                return Ok(new
+                {
+                    message = "Usuario encontrado.",
+                    user = user
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { error = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Error al buscar el usuario.", details = ex.Message });
+            }
+        }
+
+        [HttpGet("my-role")]
+        [Authorize]
+        public async Task<IActionResult> GetMyRole()
+        {
+            try
+            {
+                var roles = await _userService.GetCurrentUserRolesAsync();
+                return Ok(new
+                {
+                    roles = roles,
+                    primaryRole = roles.FirstOrDefault()
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Error al obtener el rol del usuario.", details = ex.Message });
+            }
+        }
+
+        #endregion
     }
 }
