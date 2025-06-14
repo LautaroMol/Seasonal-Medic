@@ -51,7 +51,6 @@ namespace APISeasonalMedic.Controllers
             return Ok(abono);
         }
 
-        // CAMBIADO: Ahora obtiene el UserId del JWT en lugar de recibirlo como parámetro
         [HttpGet("user")]
         public async Task<IActionResult> GetAbonoByUserId()
         {
@@ -67,6 +66,15 @@ namespace APISeasonalMedic.Controllers
             {
                 return Unauthorized(ex.Message);
             }
+        }
+        [HttpGet("por-dni/{dni}")]
+        public async Task<IActionResult> GetAbonoByDni(string dni)
+        {
+            var abono = await _abonoService.GetAbonoByDniAsync(dni);
+            if (abono == null)
+                return NotFound();
+
+            return Ok(abono);
         }
 
         [HttpPost]
@@ -144,6 +152,15 @@ namespace APISeasonalMedic.Controllers
             {
                 return NotFound();
             }
+        }
+        [HttpPost("transferir")]
+        [Authorize]
+        public async Task<IActionResult> Transferir([FromBody] TransferAbonoDto dto)
+        {
+            var fromUserId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            await _abonoService.TransferirAsync(fromUserId, dto.ToUserId, dto.Monto);
+            return Ok(new { message = "Transferencia realizada con éxito" });
         }
 
     }

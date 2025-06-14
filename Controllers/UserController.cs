@@ -440,7 +440,41 @@ namespace APISeasonalMedic.Controllers
                 return StatusCode(500, new { error = "Error al buscar el usuario.", details = ex.Message });
             }
         }
+        [Authorize]
+        [HttpGet("user-by-dni")]
+        public async Task<IActionResult> GetUserByDniForTransfer([FromQuery] string dni)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dni))
+                {
+                    return BadRequest(new { error = "El DNI es requerido." });
+                }
 
+                var user = await _userService.GetUserByDniAsync(dni);
+                return Ok(new
+                {
+                    message = "Usuario encontrado.",
+                    user = user
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { error = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Error al buscar el usuario.", details = ex.Message });
+            }
+        }
         [HttpGet("my-role")]
         [Authorize]
         public async Task<IActionResult> GetMyRole()

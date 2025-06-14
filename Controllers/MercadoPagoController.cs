@@ -135,7 +135,7 @@ namespace APISeasonalMedic.Controllers
                     return StatusCode(500, new { message = "Error en el cobro de prueba", detail = payJson });
 
                 var payData = JsonConvert.DeserializeObject<dynamic>(payJson);
-                if ((string)payData.status != "approved")
+                if ((string)payData.status != "approved" && (string)payData.status != "in_process")
                     return BadRequest(new { message = "La tarjeta fue rechazada", status = (string)payData.status });
 
                 long paymentId = payData.id;
@@ -196,7 +196,6 @@ namespace APISeasonalMedic.Controllers
                 return StatusCode(500, new { message = ex.Message, detail = ex.StackTrace });
             }
         }
-
 
         [HttpPost("crear-customer")]
         public async Task<string> CreateOrGetCustomer(CustomerCreateDto dto)
