@@ -98,7 +98,7 @@ namespace APISeasonalMedic.Services
             return _mapper.Map<CreditCardDto>(creditCard);
         }
 
-        public async Task<CreditCardDto> DeleteCreditCardAsync(int id)
+        public async Task<CreditCardDto> DeleteCreditCardAsync(Guid id)
         {
             var creditCard = await _context.CreditCards.FindAsync(id);
 

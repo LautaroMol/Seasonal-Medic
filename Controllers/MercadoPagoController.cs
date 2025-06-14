@@ -569,7 +569,7 @@ namespace APISeasonalMedic.Controllers
         }
 
         [HttpDelete("api/Deletecard/{cardId}")]
-        public async Task<object> DeleteCardCustomerAsync(int cardId)
+        public async Task<object> DeleteCardCustomerAsync(string cardId)
         {
             var creditCard = await _context.CreditCards.FindAsync(cardId);
 

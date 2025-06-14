@@ -7,7 +7,7 @@ namespace APISeasonalMedic.Services
     {
         Task<CreditCard> AddCreditCardAsync(CreditCard creditCard);
         Task<CreditCardDto> CreateCreditCardAsync(CreditCardDto creditCardDto);
-        Task<CreditCardDto> DeleteCreditCardAsync(int id);
+        Task<CreditCardDto> DeleteCreditCardAsync(Guid id);
         Task<CreditCard> GetActiveCreditCardByUserIdAsync(Guid userId);
         Task<List<CreditCard>> GetAll();
         Task<CreditCard> GetCreditCardByIdAsync(int id);

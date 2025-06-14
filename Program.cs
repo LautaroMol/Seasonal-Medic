@@ -244,7 +244,7 @@ app.MapPut("/api/card/{id}", async (ICreditCardService creditCardService, Credit
     return Results.Ok(card);
 });
 
-app.MapDelete("/api/card/{id}", async (ICreditCardService creditCardService, int id) =>
+app.MapDelete("/api/card/{id}", async (ICreditCardService creditCardService, Guid id) =>
 {
     try
     {
