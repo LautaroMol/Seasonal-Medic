@@ -5,11 +5,12 @@ namespace APISeasonalMedic.Services.Interface
 {
     public interface IMovimientosAbonoService
     {
-        Task<MovAbonosDto> Delete(int id);
+        Task<MovAbonosDto> Delete(Guid id);
         Task<List<MovimientosAbono>> GetAll();
         Task<List<MovAbonosDto>> GetByAbonoId(Guid abonoId);
-        Task<MovimientosAbono> GetMovimientosAbonoByIdAsync(int id);
+        Task<List<MovAbonosDto>> GetMovimientosByUserId(Guid userId);
+        Task<MovimientosAbono> GetMovimientosAbonoByIdAsync(Guid id);
         Task<MovAbonosDto> Post(MovAbonosDto movimientosAbonosDto);
-        Task<MovAbonosDto> Update(MovAbonosDto movimientosAbonosDto, int id);
+        Task<MovAbonosDto> Update(MovAbonosDto movimientosAbonosDto, Guid id);
     }
 }

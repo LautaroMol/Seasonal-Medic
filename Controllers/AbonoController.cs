@@ -67,6 +67,7 @@ namespace APISeasonalMedic.Controllers
                 return Unauthorized(ex.Message);
             }
         }
+
         [HttpGet("por-dni/{dni}")]
         public async Task<IActionResult> GetAbonoByDni(string dni)
         {

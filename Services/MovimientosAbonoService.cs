@@ -18,7 +18,7 @@ namespace APISeasonalMedic.Services
             _mapper = mapper;
         }
 
-        public async Task<MovimientosAbono> GetMovimientosAbonoByIdAsync(int id)
+        public async Task<MovimientosAbono> GetMovimientosAbonoByIdAsync(Guid id)
         {
             var movimientosAbono = await _context.MovimientosAbonos.FindAsync(id);
             return movimientosAbono;
@@ -38,8 +38,22 @@ namespace APISeasonalMedic.Services
 
             return _mapper.Map<List<MovAbonosDto>>(movimientos);
         }
+        public async Task<List<MovAbonosDto>> GetMovimientosByUserId(Guid userId)
+        {
+            var abono = await _context.Abonos
+                .Where(a => a.UserId == userId)
+                .FirstOrDefaultAsync();
 
+            if (abono == null)
+                return new List<MovAbonosDto>();
 
+            var movimientos = await _context.MovimientosAbonos
+                .Where(m => m.AbonoId == abono.Id)
+                .OrderByDescending(m => m.Fecha)
+                .ToListAsync();
+
+            return _mapper.Map<List<MovAbonosDto>>(movimientos);
+        }
         public async Task<MovAbonosDto> Post(MovAbonosDto movimientosAbonosDto)
         {
             var movimientosAbono = _mapper.Map<MovimientosAbono>(movimientosAbonosDto);
@@ -67,7 +81,7 @@ namespace APISeasonalMedic.Services
             return _mapper.Map<MovAbonosDto>(movimientosAbono);
         }
 
-        public async Task<MovAbonosDto> Update(MovAbonosDto movimientosAbonosDto, int id)
+        public async Task<MovAbonosDto> Update(MovAbonosDto movimientosAbonosDto, Guid id)
         {
             var movAbono = await _context.MovimientosAbonos.FindAsync(id);
             if (movAbono == null)
@@ -81,7 +95,7 @@ namespace APISeasonalMedic.Services
             return _mapper.Map<MovAbonosDto>(movAbono);
         }
 
-        public async Task<MovAbonosDto> Delete(int id)
+        public async Task<MovAbonosDto> Delete(Guid id)
         {
             var movimientosAbono = await _context.MovimientosAbonos.FindAsync(id);
             _context.MovimientosAbonos.Remove(movimientosAbono);

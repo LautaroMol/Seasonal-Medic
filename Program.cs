@@ -266,7 +266,7 @@ app.MapGet("/api/movimientos", async (IMovimientosAbonoService movimientosAbonoS
     return await movimientosAbonoService.GetAll();
 });
 
-app.MapGet("/api/movimiento/{id}", async (IMovimientosAbonoService movimientosAbonoService, int id) =>
+app.MapGet("/api/movimiento/{id}", async (IMovimientosAbonoService movimientosAbonoService, Guid id) =>
 {
     var mov = await movimientosAbonoService.GetMovimientosAbonoByIdAsync(id);
     if (mov != null)
@@ -275,6 +275,27 @@ app.MapGet("/api/movimiento/{id}", async (IMovimientosAbonoService movimientosAb
     }
     return Results.NotFound();
 });
+
+app.MapGet("/api/movimientos/user", async (
+    HttpContext httpContext,
+    IMovimientosAbonoService movimientosService
+) =>
+{
+    var userIdClaim = httpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value
+                      ?? httpContext.User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value
+                      ?? httpContext.User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
+
+    if (string.IsNullOrEmpty(userIdClaim))
+        return Results.Unauthorized();
+
+    if (!Guid.TryParse(userIdClaim, out var userId))
+        return Results.BadRequest("ID de usuario inválido");
+
+    var movimientos = await movimientosService.GetMovimientosByUserId(userId);
+
+    return Results.Ok(movimientos);
+});
+
 
 app.MapPost("/api/movimiento", async (IMovimientosAbonoService movimientosAbonoService, MovAbonosDto movAbonoDto) =>
 {
@@ -298,7 +319,7 @@ app.MapGet("/api/movimiento/abono/{abonoId}", async (IMovimientosAbonoService mo
 //    return Results.Ok(card);
 //});
 
-app.MapDelete("/api/movimiento/{id}", async (IMovimientosAbonoService movimientosAbonoService, int id) =>
+app.MapDelete("/api/movimiento/{id}", async (IMovimientosAbonoService movimientosAbonoService, Guid id) =>
 {
     var mov = await movimientosAbonoService.Delete(id);
     return Results.Ok(mov);

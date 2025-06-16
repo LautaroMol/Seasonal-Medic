@@ -6,6 +6,6 @@ namespace APISeasonalMedic.DTOs
         public DateTime Fecha { get; set; }
         public string Tipo { get; set; }
         public string? Descripcion { get; set; }
-        public int AbonoId { get; set; }
+        public Guid AbonoId { get; set; }
     }
 }
