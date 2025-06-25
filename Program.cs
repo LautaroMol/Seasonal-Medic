@@ -334,14 +334,18 @@ app.MapDelete("/api/movimiento/{id}", async (IMovimientosAbonoService movimiento
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-
-    // Aplica migraciones pendientes
     var dbContext = services.GetRequiredService<ApplicationDbContext>();
+
+    // 1) Asegura que la base exista (crea la BD si no existe)
+    await dbContext.Database.EnsureCreatedAsync();
+
+    // 2) Aplica migraciones pendientes (tablas, esquema)
     await dbContext.Database.MigrateAsync();
 
-    // Seed roles (ya lo tenés)
+    // 3) Seed roles
     await IdentityDataInitializer.SeedRolesAsync(services);
 }
+
 app.Run();
 
 public static class IdentityDataInitializer
