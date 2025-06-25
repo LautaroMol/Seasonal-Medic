@@ -1,7 +1,7 @@
 ﻿using APISeasonalMedic.DTOs;
 using APISeasonalMedic.Models;
 
-namespace APISeasonalMedic.Services
+namespace APISeasonalMedic.Services.Interface
 {
     public interface ICreditCardService
     {

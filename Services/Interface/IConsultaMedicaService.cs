@@ -1,6 +1,6 @@
 ﻿using APISeasonalMedic.DTOs;
 
-namespace APISeasonalMedic.Services
+namespace APISeasonalMedic.Services.Interface
 {
     public interface IConsultaMedicaService
     {

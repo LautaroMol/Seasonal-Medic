@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      SA_PASSWORD: "Your_strong_password1!"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    networks:
+      - backend
+
+  api:
+    build: .
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ConnectionStrings__Connection=${ConnectionStrings__Connection}
+      - JWT__Key=${JWT__Key}
+      - JWT__Issuer=${JWT__Issuer}
+      - JWT__Audience=${JWT__Audience}
+      - GmailSettings__Username=${GmailSettings__Username}
+      - GmailSettings__Password=${GmailSettings__Password}
+      - GmailSettings__Port=${GmailSettings__Port}
+      - Cloudinary__CloudName=${Cloudinary__CloudName}
+      - Cloudinary__ApiKey=${Cloudinary__ApiKey}
+      - Cloudinary__ApiSecret=${Cloudinary__Cloudinary__ApiSecret}
+      - MercadoPago__AccessToken=${MercadoPago__AccessToken}
+      - MercadoPago__PublicKey=${MercadoPago__PublicKey}
+    depends_on:
+      - db
+    networks:
+      - backend
+volumes:
+  mssql-data:
+
+networks:
+  backend:

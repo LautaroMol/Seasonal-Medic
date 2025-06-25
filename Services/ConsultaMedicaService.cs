@@ -1,6 +1,7 @@
 ﻿using APISeasonalMedic.Data;
 using APISeasonalMedic.DTOs;
 using APISeasonalMedic.Models;
+using APISeasonalMedic.Services.Interface;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 

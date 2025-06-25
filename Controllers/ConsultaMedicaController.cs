@@ -1,5 +1,5 @@
 ﻿using APISeasonalMedic.DTOs;
-using APISeasonalMedic.Services;
+using APISeasonalMedic.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;

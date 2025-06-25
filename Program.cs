@@ -79,7 +79,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 });
-
+builder.Configuration
+    .AddUserSecrets<Program>()
+    .AddEnvironmentVariables();
 //gmail
 builder.Services.Configure<GmailSettings>(builder.Configuration.GetSection("GmailSettings"));
 
@@ -329,6 +331,17 @@ app.MapDelete("/api/movimiento/{id}", async (IMovimientosAbonoService movimiento
 
 #endregion
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+
+    // Aplica migraciones pendientes
+    var dbContext = services.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.MigrateAsync();
+
+    // Seed roles (ya lo tenés)
+    await IdentityDataInitializer.SeedRolesAsync(services);
+}
 app.Run();
 
 public static class IdentityDataInitializer
