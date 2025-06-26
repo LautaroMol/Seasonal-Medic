@@ -7,6 +7,13 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+# Copiamos el certificado al contenedor
+# (asumiendo que en tu build context está en seasonalMedic/certs/aspnetapp.pfx)
+COPY certs/aspnetapp.pfx /https/aspnetapp.pfx
+
+# Configuramos Kestrel para usarlo como certificado por defecto
+ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+ENV ASPNETCORE_Kestrel__Certificates__Default__Password=Password123!
 
 # Esta fase se usa para compilar el proyecto de servicio
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
