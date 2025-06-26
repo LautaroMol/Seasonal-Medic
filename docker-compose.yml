@@ -5,6 +5,18 @@ services:
     build:
       context: seasonalMedic
       dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - GmailSettings__Username=${GMAIL_USER}
+      - GmailSettings__Password=${GMAIL_PASS}
+      - GmailSettings__Port=${GMAIL_PORT}
+      - Cloudinary__CloudName=${CLOUD_NAME}
+      - Cloudinary__ApiKey=${CLOUD_KEY}
+      - Cloudinary__ApiSecret=${CLOUD_SECRET}
+      - ConnectionStrings__Connection=${DB_CONN}
   SeasonalMedicDB:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: SeasonalMedic.Db
