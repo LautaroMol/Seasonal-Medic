@@ -1,5 +1,6 @@
 using APISeasonalMedic.Data;
 using APISeasonalMedic.DTOs;
+using APISeasonalMedic.Extensions;
 using APISeasonalMedic.Models;
 using APISeasonalMedic.Services;
 using APISeasonalMedic.Services.Interface;
@@ -147,7 +148,7 @@ if (app.Environment.IsDevelopment())
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseStaticFiles();
-
+app.ApplyMigrations();
 // IMPORTANTE: Orden correcto del middleware
 app.UseCors("AllowAll");
 app.UseHttpsRedirection();
